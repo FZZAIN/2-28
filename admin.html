@@ -1,0 +1,194 @@
+<!-- ========================= -->
+<!-- FILE 2 = admin.html -->
+<!-- ADMIN PANEL -->
+<!-- ========================= -->
+
+<!DOCTYPE html>
+<html lang="ms">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>ADMIN PANEL</title>
+
+<style>
+*{
+margin:0;
+padding:0;
+box-sizing:border-box;
+font-family:Arial;
+}
+
+body{
+background:#111;
+color:white;
+}
+
+header{
+background:#000;
+padding:20px;
+text-align:center;
+font-size:26px;
+font-weight:bold;
+border-bottom:2px solid red;
+}
+
+.container{
+max-width:700px;
+margin:auto;
+padding:20px;
+}
+
+input,button{
+width:100%;
+padding:12px;
+margin:6px 0;
+border:none;
+border-radius:8px;
+}
+
+input{
+background:#1f1f1f;
+color:white;
+}
+
+button{
+background:#25d366;
+color:white;
+font-weight:bold;
+cursor:pointer;
+}
+
+.card{
+background:#1a1a1a;
+padding:15px;
+border-radius:12px;
+margin-top:10px;
+}
+
+.delete{
+background:red;
+margin-top:8px;
+}
+</style>
+</head>
+
+<body>
+
+<header>🔐 ADMIN PANEL</header>
+
+<div class="container">
+
+<div id="loginBox">
+
+<input type="text" id="user" placeholder="Username">
+<input type="password" id="pass" placeholder="Password">
+
+<button onclick="login()">Login</button>
+
+</div>
+
+<div id="panel" style="display:none;">
+
+<h2>Tambah Kereta</h2>
+
+<input id="name" placeholder="Nama Kereta">
+<input id="brand" placeholder="Brand">
+<input id="price" placeholder="Harga">
+<input id="year" placeholder="Tahun">
+<input id="mileage" placeholder="Mileage">
+<input id="img" placeholder="Link Gambar">
+<input id="features" placeholder="Features">
+
+<button onclick="addCar()">Tambah</button>
+
+<h2 style="margin-top:20px;">Stock Kereta</h2>
+
+<div id="stock"></div>
+
+</div>
+
+</div>
+
+<script>
+
+let cars = JSON.parse(localStorage.getItem("cars")) || [];
+
+function save(){
+localStorage.setItem("cars",JSON.stringify(cars));
+}
+
+function login(){
+
+if(user.value==="admin" && pass.value==="1234"){
+
+loginBox.style.display="none";
+panel.style.display="block";
+render();
+
+}else{
+
+alert("Login salah");
+
+}
+
+}
+
+function addCar(){
+
+cars.push({
+
+name:name.value,
+brand:brand.value,
+price:Number(price.value),
+year:year.value,
+mileage:mileage.value,
+img:img.value,
+features:features.value
+
+});
+
+save();
+render();
+
+alert("Kereta ditambah");
+
+}
+
+function render(){
+
+let html="";
+
+cars.forEach((car,i)=>{
+
+html += `
+<div class="card">
+
+<h3>${car.name}</h3>
+<p>RM ${car.price.toLocaleString()}</p>
+<p>${car.brand}</p>
+
+<button class="delete" onclick="del(${i})">
+Delete
+</button>
+
+</div>
+`;
+
+});
+
+stock.innerHTML = html;
+
+}
+
+function del(i){
+
+cars.splice(i,1);
+save();
+render();
+
+}
+
+</script>
+
+</body>
+</html>
