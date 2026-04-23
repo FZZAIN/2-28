@@ -1,0 +1,174 @@
+<script>
+
+let cars = JSON.parse(localStorage.getItem("cars")) || [];
+
+function save(){
+localStorage.setItem("cars", JSON.stringify(cars));
+}
+
+function login(){
+
+let username = document.getElementById("user").value.trim();
+let password = document.getElementById("pass").value.trim();
+
+/* =========================
+   ADMIN LOGIN INFO
+========================= */
+
+if(
+username === "fariszain97@gmail.com" &&
+password === "Frszn017"
+){
+
+document.getElementById("loginBox").style.display = "none";
+document.getElementById("panel").classList.remove("hidden");
+
+render();
+
+}else{
+
+alert("Email atau password salah");
+
+}
+
+}
+
+function logout(){
+location.reload();
+}
+
+function goCustomer(){
+window.location.href = "index.html";
+}
+
+function addCar(){
+
+let car = {
+
+name:document.getElementById("name").value,
+brand:document.getElementById("brand").value,
+price:Number(document.getElementById("price").value),
+year:document.getElementById("year").value,
+mileage:document.getElementById("mileage").value,
+img:document.getElementById("img").value,
+features:document.getElementById("features").value
+
+};
+
+if(
+car.name==="" ||
+car.brand==="" ||
+car.price==="" ||
+car.year===""
+){
+alert("Sila isi maklumat penting");
+return;
+}
+
+cars.push(car);
+
+save();
+render();
+clearForm();
+
+alert("Kereta berjaya ditambah");
+
+}
+
+function clearForm(){
+
+document.getElementById("name").value="";
+document.getElementById("brand").value="";
+document.getElementById("price").value="";
+document.getElementById("year").value="";
+document.getElementById("mileage").value="";
+document.getElementById("img").value="";
+document.getElementById("features").value="";
+
+}
+
+function render(){
+
+let html = "";
+
+if(cars.length===0){
+html="<p>Tiada stock lagi.</p>";
+}
+
+cars.forEach((car,i)=>{
+
+html += `
+<div class="card">
+
+<img src="${car.img || 'https://via.placeholder.com/500x300?text=No+Image'}">
+
+<h3>${car.name}</h3>
+
+<div class="price">
+RM ${Number(car.price).toLocaleString()}
+</div>
+
+<p>${car.brand} • ${car.year}</p>
+<p>${car.mileage}</p>
+<p>${car.features}</p>
+
+<button onclick="editCar(${i})" class="blue">
+Edit
+</button>
+
+<button onclick="deleteCar(${i})" class="red">
+Delete
+</button>
+
+</div>
+`;
+
+});
+
+document.getElementById("stock").innerHTML = html;
+
+}
+
+function deleteCar(i){
+
+if(confirm("Delete kereta ini?")){
+
+cars.splice(i,1);
+save();
+render();
+
+}
+
+}
+
+function editCar(i){
+
+let car = cars[i];
+
+document.getElementById("name").value = car.name;
+document.getElementById("brand").value = car.brand;
+document.getElementById("price").value = car.price;
+document.getElementById("year").value = car.year;
+document.getElementById("mileage").value = car.mileage;
+document.getElementById("img").value = car.img;
+document.getElementById("features").value = car.features;
+
+cars.splice(i,1);
+
+save();
+render();
+
+window.scrollTo({
+top:0,
+behavior:"smooth"
+});
+
+}
+
+document.getElementById("pass").addEventListener("keypress",function(e){
+if(e.key==="Enter"){
+login();
+}
+});
+
+</script>
