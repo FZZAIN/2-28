@@ -1,0 +1,342 @@
+<!DOCTYPE html>
+<html lang="ms">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>FZ RECOND CAR LUXURY</title>
+
+<style>
+
+/* ================= BACKGROUND ================= */
+body{
+  margin:0;
+  font-family:Arial;
+  background: radial-gradient(circle at top,#1a1a1a,#000);
+  color:white;
+  overflow-x:hidden;
+}
+
+/* moving neon glow */
+.bg{
+  position:fixed;
+  width:100%;
+  height:100%;
+  background:
+    radial-gradient(circle at 20% 20%, #ff004c33, transparent 40%),
+    radial-gradient(circle at 80% 80%, #00e5ff33, transparent 40%);
+  animation:move 8s infinite alternate;
+  z-index:-1;
+}
+
+@keyframes move{
+  0%{transform:scale(1) rotate(0deg);}
+  100%{transform:scale(1.2) rotate(6deg);}
+}
+
+/* ================= LOGIN ================= */
+#loginBox{
+  text-align:center;
+  margin-top:120px;
+}
+
+input{
+  padding:10px;
+  margin:6px;
+  border:none;
+  border-radius:10px;
+  background:#1a1a1a;
+  color:white;
+  width:220px;
+}
+
+/* ================= BUTTON ================= */
+button{
+  padding:10px 15px;
+  border:none;
+  border-radius:10px;
+  cursor:pointer;
+  background:linear-gradient(45deg,#ff004c,#ff7a00);
+  color:white;
+  font-weight:bold;
+}
+
+/* ================= ADMIN DASHBOARD ================= */
+#adminPanel{
+  padding:20px;
+}
+
+.topbar{
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  padding:15px;
+  background:rgba(255,255,255,0.05);
+  backdrop-filter:blur(10px);
+  border-radius:15px;
+}
+
+.form{
+  margin:20px 0;
+  padding:20px;
+  background:rgba(255,255,255,0.06);
+  border-radius:20px;
+  backdrop-filter:blur(10px);
+}
+
+/* ================= CAR CARD ================= */
+.grid{
+  display:grid;
+  grid-template-columns:repeat(auto-fit,minmax(250px,1fr));
+  gap:15px;
+}
+
+.card{
+  background:rgba(255,255,255,0.06);
+  padding:15px;
+  border-radius:20px;
+  backdrop-filter:blur(12px);
+  transition:0.4s;
+}
+
+.card:hover{
+  transform:scale(1.05);
+  box-shadow:0 0 25px #ff004c55;
+}
+
+img{
+  width:100%;
+  border-radius:12px;
+}
+
+</style>
+
+<!-- FIREBASE -->
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-storage-compat.js"></script>
+
+</head>
+
+<body>
+
+<div class="bg"></div>
+
+<!-- ================= LOGIN ================= -->
+<div id="loginBox">
+  <h1>🚗 SHOWROOM LOGIN</h1>
+  <input id="email" placeholder="email"><br>
+  <input id="password" type="password" placeholder="password"><br>
+  <button onclick="login()">LOGIN</button>
+</div>
+
+<!-- ================= ADMIN ================= -->
+<div id="adminPanel" style="display:none;">
+
+  <div class="topbar">
+    <h2>🚗 ADMIN DASHBOARD</h2>
+    <button onclick="logout()">Logout</button>
+  </div>
+
+  <div class="form">
+    <h3>Tambah Kereta</h3>
+
+    <input id="name" placeholder="Nama">
+    <input id="brand" placeholder="Brand">
+    <input id="price" placeholder="Price">
+    <input id="year" placeholder="Year">
+    <input id="mileage" placeholder="Mileage">
+    <input type="file" id="imgFile"><br><br>
+
+    <button onclick="saveCar()">SAVE CAR</button>
+  </div>
+
+  <h3>LIST</h3>
+  <div id="adminList" class="grid"></div>
+
+</div>
+
+<!-- ================= CUSTOMER ================= -->
+<div id="customerPanel" style="display:none;">
+  <h2 style="text-align:center;">🚗 LUXURY SHOWROOM</h2>
+  <div id="customerList" class="grid"></div>
+</div>
+
+<script>
+
+/* ================= FIREBASE ================= */
+const firebaseConfig = {
+  apiKey: "AIzaSyCCWwtCJWfzt7Ro3goa9jH6sZpmJmx7UhI",
+  authDomain: "projectfzzaintp1.firebaseapp.com",
+  projectId: "projectfzzaintp1",
+  storageBucket: "projectfzzaintp1.appspot.com"
+};
+
+firebase.initializeApp(firebaseConfig);
+
+const auth = firebase.auth();
+const db = firebase.firestore();
+const storage = firebase.storage();
+
+const ADMIN_EMAIL = "fariszain97@gmail.com";
+
+/* ================= DOM ================= */
+const email = document.getElementById("email");
+const password = document.getElementById("password");
+
+const loginBox = document.getElementById("loginBox");
+const adminPanel = document.getElementById("adminPanel");
+const customerPanel = document.getElementById("customerPanel");
+
+const adminList = document.getElementById("adminList");
+const customerList = document.getElementById("customerList");
+
+const name = document.getElementById("name");
+const brand = document.getElementById("brand");
+const price = document.getElementById("price");
+const year = document.getElementById("year");
+const mileage = document.getElementById("mileage");
+const imgFile = document.getElementById("imgFile");
+
+let editId = null;
+
+/* ================= VIEW ================= */
+function show(v){
+  loginBox.style.display="none";
+  adminPanel.style.display="none";
+  customerPanel.style.display="none";
+
+  if(v==="login") loginBox.style.display="block";
+  if(v==="admin") adminPanel.style.display="block";
+  if(v==="customer") customerPanel.style.display="block";
+}
+
+/* ================= LOGIN ================= */
+function login(){
+
+  auth.signInWithEmailAndPassword(email.value,password.value)
+  .then(res=>{
+
+    if(res.user.email!==ADMIN_EMAIL){
+      auth.signOut();
+      alert("❌ Admin sahaja");
+      return;
+    }
+
+    show("admin");
+    loadAll();
+
+  })
+  .catch(e=>alert(e.message));
+}
+
+/* ================= LOGOUT ================= */
+function logout(){
+  auth.signOut().then(()=>show("customer"));
+}
+
+/* ================= AUTH ================= */
+auth.onAuthStateChanged(user=>{
+
+  if(!user){
+    show("customer");
+    loadAll();
+    return;
+  }
+
+  if(user.email===ADMIN_EMAIL){
+    show("admin");
+    loadAll();
+  }else{
+    auth.signOut();
+    show("customer");
+    loadAll();
+  }
+
+});
+
+/* ================= UPLOAD (1 CLICK) ================= */
+async function uploadImage(file){
+
+  const ref = storage.ref("cars/"+Date.now()+"_"+file.name);
+
+  await ref.put(file);
+
+  return await ref.getDownloadURL();
+}
+
+/* ================= SAVE (ONE CLICK FULL) ================= */
+async function saveCar(){
+
+  let imgUrl="";
+
+  if(imgFile.files[0]){
+    imgUrl = await uploadImage(imgFile.files[0]);
+  }
+
+  await db.collection("cars").add({
+    name:name.value,
+    brand:brand.value,
+    price:price.value,
+    year:year.value,
+    mileage:mileage.value,
+    img:imgUrl
+  });
+
+  clearForm();
+}
+
+/* ================= LOAD ================= */
+function loadAll(){
+
+  db.collection("cars").onSnapshot(snap=>{
+
+    let adminHTML="";
+    let customerHTML="";
+
+    snap.forEach(doc=>{
+      let c=doc.data();
+
+      adminHTML+=`
+      <div class="card">
+        <h3>${c.name}</h3>
+        <p>${c.brand}</p>
+        <p>RM ${c.price}</p>
+        <img src="${c.img}">
+      </div>
+      `;
+
+      customerHTML+=`
+      <div class="card">
+        <img src="${c.img}">
+        <h3>${c.name}</h3>
+        <p>RM ${c.price}</p>
+
+        <button onclick="window.open('https://wa.me/601136756741?text=${encodeURIComponent(c.name)}')">
+          WhatsApp
+        </button>
+      </div>
+      `;
+    });
+
+    adminList.innerHTML=adminHTML;
+    customerList.innerHTML=customerHTML;
+
+  });
+
+}
+
+/* ================= CLEAR ================= */
+function clearForm(){
+  name.value="";
+  brand.value="";
+  price.value="";
+  year.value="";
+  mileage.value="";
+  imgFile.value="";
+}
+
+</script>
+
+</body>
+</html>
