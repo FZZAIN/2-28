@@ -1,0 +1,282 @@
+<!DOCTYPE html>
+<html lang="ms">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>SHOWROOM PRO MAX</title>
+
+<style>
+body{
+  margin:0;
+  font-family:Arial;
+  background:#0b0b0b;
+  color:white;
+}
+
+.card{
+  background:rgba(255,255,255,0.06);
+  padding:15px;
+  margin:10px;
+  border-radius:15px;
+  backdrop-filter:blur(10px);
+}
+
+img{
+  width:100%;
+  border-radius:10px;
+}
+
+button{
+  padding:8px 12px;
+  margin:5px;
+  border:none;
+  border-radius:8px;
+  cursor:pointer;
+}
+</style>
+
+<!-- FIREBASE -->
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-storage-compat.js"></script>
+
+</head>
+
+<body>
+
+<!-- LOGIN (ADMIN ONLY) -->
+<div id="loginBox">
+  <h2>ADMIN LOGIN</h2>
+  <input id="email" placeholder="email"><br><br>
+  <input id="password" type="password" placeholder="password"><br><br>
+  <button onclick="login()">Login</button>
+</div>
+
+<!-- ADMIN PANEL -->
+<div id="adminPanel" style="display:none;">
+  <h2>ADMIN PANEL</h2>
+
+  <input id="name" placeholder="Nama"><br>
+  <input id="brand" placeholder="Brand"><br>
+  <input id="price" placeholder="Price"><br>
+  <input id="year" placeholder="Year"><br>
+  <input id="mileage" placeholder="Mileage"><br>
+  <input id="features" placeholder="Features"><br>
+  <input type="file" id="imgFile"><br><br>
+
+  <button onclick="saveCar()">Save Car</button>
+  <button onclick="logout()">Logout</button>
+
+  <h3>LIST ADMIN</h3>
+  <div id="adminList"></div>
+</div>
+
+<!-- CUSTOMER (PUBLIC ONLY) -->
+<div id="customerPanel" style="display:block;">
+  <h2 style="text-align:center;">🚗 SHOWROOM</h2>
+  <div id="customerList"></div>
+</div>
+
+<script>
+
+/* ================= FIREBASE ================= */
+const firebaseConfig = {
+  apiKey: "AIzaSyCCWwtCJWfzt7Ro3goa9jH6sZpmJmx7UhI",
+  authDomain: "projectfzzaintp1.firebaseapp.com",
+  projectId: "projectfzzaintp1",
+  storageBucket: "projectfzzaintp1.firebasestorage.app"
+};
+
+firebase.initializeApp(firebaseConfig);
+
+const auth = firebase.auth();
+const db = firebase.firestore();
+const storage = firebase.storage();
+
+/* ================= ADMIN LOCK ================= */
+const ADMIN_EMAIL = "fariszain97@gmail.com";
+
+/* ================= DOM ================= */
+const email = document.getElementById("email");
+const password = document.getElementById("password");
+
+const loginBox = document.getElementById("loginBox");
+const adminPanel = document.getElementById("adminPanel");
+const customerPanel = document.getElementById("customerPanel");
+
+const adminList = document.getElementById("adminList");
+const customerList = document.getElementById("customerList");
+
+const name = document.getElementById("name");
+const brand = document.getElementById("brand");
+const price = document.getElementById("price");
+const year = document.getElementById("year");
+const mileage = document.getElementById("mileage");
+const features = document.getElementById("features");
+const imgFile = document.getElementById("imgFile");
+
+let editId = null;
+
+/* ================= VIEW CONTROL ================= */
+function show(view){
+
+  loginBox.style.display="none";
+  adminPanel.style.display="none";
+  customerPanel.style.display="none";
+
+  if(view==="login") loginBox.style.display="block";
+  if(view==="admin") adminPanel.style.display="block";
+  if(view==="customer") customerPanel.style.display="block";
+}
+
+/* ================= LOGIN (ADMIN ONLY) ================= */
+function login(){
+
+  auth.signInWithEmailAndPassword(email.value, password.value)
+  .then(res => {
+
+    if(res.user.email !== ADMIN_EMAIL){
+      auth.signOut();
+      show("customer");
+      alert("❌ Hanya ADMIN sahaja boleh login");
+      return;
+    }
+
+    show("admin");
+    loadAll();
+
+  })
+  .catch(err=>{
+    alert(err.message);
+  });
+}
+
+/* ================= LOGOUT ================= */
+function logout(){
+  auth.signOut().then(()=>{
+    show("customer");
+  });
+}
+
+/* ================= AUTH STATE (LOCKED) ================= */
+auth.onAuthStateChanged(user=>{
+
+  if(!user){
+    show("customer");
+    loadAll();
+    return;
+  }
+
+  if(user.email === ADMIN_EMAIL){
+    show("admin");
+    loadAll();
+  } else {
+    auth.signOut();
+    show("customer");
+    loadAll();
+  }
+
+});
+
+/* ================= UPLOAD IMAGE ================= */
+async function uploadImage(file){
+
+  const ref = storage.ref("cars/"+Date.now()+"_"+Math.random().toString(36).slice(2));
+
+  await ref.put(file);
+  return await ref.getDownloadURL();
+}
+
+/* ================= SAVE CAR ================= */
+async function saveCar(){
+
+  let imgUrl = "";
+
+  if(imgFile.files[0]){
+    imgUrl = await uploadImage(imgFile.files[0]);
+  }
+
+  const data = {
+    name:name.value,
+    brand:brand.value,
+    price:Number(price.value),
+    year:year.value,
+    mileage:mileage.value,
+    features:features.value,
+    img:imgUrl
+  };
+
+  if(editId){
+    await db.collection("cars").doc(editId).update(data);
+    editId = null;
+  } else {
+    await db.collection("cars").add(data);
+  }
+
+  clearForm();
+}
+
+/* ================= LOAD ALL ================= */
+function loadAll(){
+
+  db.collection("cars").onSnapshot(snap=>{
+
+    let adminHTML = "";
+    let customerHTML = "";
+
+    snap.forEach(doc=>{
+      let c = doc.data();
+
+      adminHTML += `
+      <div class="card">
+        <h3>${c.name}</h3>
+        <p>${c.brand}</p>
+        <p>RM ${c.price}</p>
+        <img src="${c.img || ''}">
+        <button onclick="deleteCar('${doc.id}')">Delete</button>
+      </div>
+      `;
+
+      customerHTML += `
+      <div class="card">
+        <img src="${c.img || ''}">
+        <h3>${c.name}</h3>
+        <p>RM ${c.price}</p>
+
+        <a href="https://wa.me/601136756741?text=${encodeURIComponent('Saya nak tanya ' + c.name)}">
+          <button>WhatsApp</button>
+        </a>
+      </div>
+      `;
+    });
+
+    adminList.innerHTML = adminHTML;
+    customerList.innerHTML = customerHTML;
+
+  });
+
+}
+
+/* ================= DELETE ================= */
+function deleteCar(id){
+  if(confirm("Delete?")){
+    db.collection("cars").doc(id).delete();
+  }
+}
+
+/* ================= CLEAR FORM ================= */
+function clearForm(){
+  name.value="";
+  brand.value="";
+  price.value="";
+  year.value="";
+  mileage.value="";
+  features.value="";
+  imgFile.value="";
+}
+
+</script>
+
+</body>
+</html>
