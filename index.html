@@ -1,0 +1,305 @@
+<!DOCTYPE html>
+<html lang="ms">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>FZZAIN RECON PREMIUM</title>
+
+<style>
+*{margin:0;padding:0;box-sizing:border-box;font-family:Arial;}
+
+body{background:#0b0b0b;color:white;}
+
+header{
+background:linear-gradient(90deg,#000,#111,#000);
+padding:22px;
+text-align:center;
+font-size:30px;
+font-weight:bold;
+color:gold;
+border-bottom:2px solid gold;
+}
+
+.hero{
+padding:45px 20px;
+text-align:center;
+background:#111;
+}
+
+.hero h1{font-size:36px;margin-bottom:10px;}
+.hero p{color:#ccc;font-size:16px;}
+
+.brand-bar{
+max-width:1300px;
+margin:auto;
+padding:20px;
+display:flex;
+flex-wrap:wrap;
+gap:10px;
+justify-content:center;
+}
+
+.brand{
+background:#1a1a1a;
+border:1px solid #333;
+padding:10px 16px;
+border-radius:30px;
+cursor:pointer;
+}
+
+.brand:hover{background:gold;color:black;}
+
+.filter-bar{
+max-width:1300px;
+margin:auto;
+padding:0 25px 20px;
+display:grid;
+grid-template-columns:1fr 1fr;
+gap:15px;
+}
+
+select,input{
+width:100%;
+padding:14px;
+border:none;
+border-radius:10px;
+background:#1a1a1a;
+color:white;
+}
+
+.container{max-width:1300px;margin:auto;padding:25px;}
+
+.grid{
+display:grid;
+grid-template-columns:repeat(auto-fit,minmax(300px,1fr));
+gap:22px;
+}
+
+.card{
+background:#151515;
+border-radius:18px;
+overflow:hidden;
+position:relative;
+}
+
+.card img{
+width:100%;
+height:220px;
+object-fit:cover;
+}
+
+.body{padding:18px;}
+
+.title{font-size:22px;font-weight:bold;}
+
+.price{
+font-size:28px;
+font-weight:bold;
+color:gold;
+margin:12px 0;
+}
+
+.info{color:#ccc;margin:5px 0;}
+
+button{
+width:100%;
+padding:13px;
+border:none;
+border-radius:10px;
+background:#25d366;
+color:white;
+font-weight:bold;
+cursor:pointer;
+margin-top:12px;
+}
+
+.badge{
+position:absolute;
+top:10px;
+left:10px;
+padding:6px 10px;
+border-radius:20px;
+font-size:12px;
+font-weight:bold;
+}
+
+.hot{background:red;}
+.best{background:gold;color:black;}
+
+.empty{
+text-align:center;
+padding:40px;
+color:#888;
+font-size:20px;
+}
+
+.lock{
+position:fixed;
+bottom:20px;
+right:20px;
+background:gold;
+color:black;
+padding:16px;
+border-radius:50%;
+text-decoration:none;
+font-weight:bold;
+}
+
+.float-wa{
+position:fixed;
+bottom:20px;
+left:20px;
+background:#25d366;
+color:white;
+padding:15px;
+border-radius:50%;
+text-decoration:none;
+}
+</style>
+</head>
+
+<body>
+
+<header>🚗 FZZAIN RECON PREMIUM</header>
+
+<div class="hero">
+<h1>Luxury Recon & Used Car</h1>
+<p>Trusted Dealer • Best Deal • Fast Approval</p>
+</div>
+
+<div class="filter-bar">
+<select id="yearFilter" onchange="render()">
+<option value="">Semua Tahun</option>
+<option>2026</option><option>2025</option><option>2024</option>
+<option>2023</option><option>2022</option><option>2021</option>
+</select>
+
+<select id="priceFilter" onchange="render()">
+<option value="">Semua Harga</option>
+<option value="50000">Bawah RM50k</option>
+<option value="100000">Bawah RM100k</option>
+<option value="200000">Bawah RM200k</option>
+</select>
+</div>
+
+<div class="container">
+<input type="text" id="search" placeholder="Cari kereta / brand">
+<div class="grid" id="carList"></div>
+</div>
+
+<a href="admin.html" class="lock">🔐</a>
+<a href="https://wa.me/60123456789" class="float-wa">📞</a>
+
+<script>
+
+let cars = JSON.parse(localStorage.getItem("cars")) || [];
+
+function pickBrand(name){
+document.getElementById("search").value = name;
+render();
+}
+
+/* ================= LOAN SYSTEM ================= */
+function sendLoan(id, carName, carPrice){
+
+let name = document.getElementById("name_" + id).value;
+let salary = document.getElementById("salary_" + id).value;
+
+if(!name || !salary){
+alert("Sila isi nama dan gaji!");
+return;
+}
+
+// WhatsApp FIXED NUMBER
+let phone = "01136756741";
+let waPhone = phone.replace(/^0/,"60");
+
+// CLEAN INPUT
+let salaryNum = Number(String(salary).replace(/,/g,'').replace(/\D/g,''));
+
+let status = salaryNum > 5000 
+? "🟢 HIGH APPROVAL CHANCE"
+: "🟡 MANUAL REVIEW";
+
+let msg = `📝 APPLY LOAN REQUEST
+
+🚗 Model : ${carName}
+💰 Harga : RM${Number(carPrice).toLocaleString()}
+
+👤 Nama : ${name}
+💼 Gaji : RM${salaryNum.toLocaleString()}
+
+📊 Status : ${status}`;
+
+let url = "https://wa.me/" + waPhone + "?text=" + encodeURIComponent(msg);
+
+window.open(url,"_blank");
+
+}
+
+/* ================= RENDER ================= */
+function render(){
+
+let keyword = document.getElementById("search").value.toLowerCase();
+let year = document.getElementById("yearFilter").value;
+let price = document.getElementById("priceFilter").value;
+
+let filtered = cars.filter(car => {
+return (
+(car.name||"").toLowerCase().includes(keyword) ||
+(car.brand||"").toLowerCase().includes(keyword)
+) &&
+(year=="" || car.year==year) &&
+(price=="" || Number(car.price)<=Number(price));
+});
+
+let html="";
+
+if(filtered.length==0){
+html=`<div class="empty">Tiada kereta dijumpai</div>`;
+}
+
+filtered.forEach((car,index)=>{
+
+let badge = Number(car.price)<80000
+? `<div class="badge hot">HOT</div>`
+: `<div class="badge best">BEST</div>`;
+
+html+=`
+<div class="card">
+
+<img src="${car.img}" onerror="this.src='https://via.placeholder.com/500x300?text=NO+IMAGE'">
+
+<div class="body">
+
+${badge}
+
+<div class="title">${car.name}</div>
+<div class="price">RM ${Number(car.price).toLocaleString()}</div>
+
+<div class="info">${car.brand} • ${car.year}</div>
+<div class="info">${car.mileage}</div>
+
+<input id="name_${index}" placeholder="Nama" style="margin-top:10px;padding:10px;background:#222;color:white;border:none;border-radius:8px;">
+
+<input id="salary_${index}" placeholder="Gaji" style="margin-top:8px;padding:10px;background:#222;color:white;border:none;border-radius:8px;">
+
+<button onclick="sendLoan(${index}, ${JSON.stringify(car.name)}, ${car.price})">
+💰 Apply Loan WhatsApp
+</button>
+
+</div>
+</div>
+`;
+});
+
+document.getElementById("carList").innerHTML=html;
+}
+
+document.getElementById("search").onkeyup=render;
+render();
+
+</script>
+
+</body>
+</html>
